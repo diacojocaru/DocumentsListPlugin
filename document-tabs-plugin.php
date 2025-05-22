@@ -1,13 +1,13 @@
 <?php
 /*
 Plugin Name: Document Tabs Plugin
-Description: Plugin for managing documents in customized tabs. Each category (year) contains subcategories, and documents are added only at the subcategory level.
+Description: Plugin pentru gestionarea documentelor în taburi personalizate. Fiecare categorie (an) conține subcategorii, iar documentele se adaugă doar la nivelul subcategoriilor.
 Version: 1.1
-Author: Diana Cojocaru / Developful.ro
+Author: Numele tău
 */
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Prevent direct access
+    exit; // Previne accesul direct
 }
 
 class Document_Tabs_Plugin {
@@ -19,7 +19,7 @@ class Document_Tabs_Plugin {
         add_shortcode('document_tabs', array($this, 'document_tabs_shortcode'));
     }
 
-    // Adds the admin page
+    // Adaugă pagina de administrare
     public function add_admin_menu() {
         add_menu_page(
             'Document Tabs',
@@ -32,7 +32,7 @@ class Document_Tabs_Plugin {
         );
     }
 
-    // Loads necessary scripts in the admin area
+    // Încarcă scripturile necesare în zona de admin
     public function enqueue_admin_scripts($hook) {
         if ( $hook != 'toplevel_page_document-tabs' ) {
             return;
@@ -47,35 +47,35 @@ class Document_Tabs_Plugin {
         );
     }
 
-    // Admin settings page
+    // Pagina de setări din admin
     public function admin_page() {
-        // Form processing
+        // Procesare formular
         if (isset($_POST['document_tabs_data'])) {
             check_admin_referer('document_tabs_nonce_action', 'document_tabs_nonce_field');
             $data = json_decode(stripslashes($_POST['document_tabs_data']), true);
             update_option($this->option_name, $data);
-            echo '<div class="updated"><p>Settings saved!</p></div>';
+            echo '<div class="updated"><p>Setări salvate!</p></div>';
         }
         $data = get_option($this->option_name, array());
         ?>
         <div class="wrap">
-            <h1>Document Tabs Settings</h1>
-            <p>Create categories (years) and for each, add subcategories with documents.</p>
+            <h1>Setări Document Tabs</h1>
+            <p>Creează categorii (ani) și pentru fiecare adaugă subcategorii cu documente.</p>
             <form method="post" id="document-tabs-form">
                 <?php wp_nonce_field('document_tabs_nonce_action', 'document_tabs_nonce_field'); ?>
                 <div id="categories-container">
                     <?php if(!empty($data)) : ?>
                         <?php foreach($data as $index => $cat): ?>
                             <div class="category-item" data-index="<?php echo esc_attr($index); ?>">
-                                <input type="text" class="category-name" placeholder="Category name (year)" value="<?php echo esc_attr($cat['name']); ?>" />
-                                <button class="delete-category button" style="margin-left:10px;">Delete Category</button>
+                                <input type="text" class="category-name" placeholder="Nume categorie (an)" value="<?php echo esc_attr($cat['name']); ?>" />
+                                <button class="delete-category button" style="margin-left:10px;">Șterge Categorie</button>
                                 <div class="subcategories-container">
                                     <?php if(isset($cat['subcategories']) && is_array($cat['subcategories'])): ?>
                                         <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
                                             <div class="subcategory-item" data-index="<?php echo esc_attr($subIndex); ?>" style="margin-left:20px; border:1px dashed #ddd; padding:10px; margin-top:10px;">
-                                                <input type="text" class="subcategory-name" placeholder="Subcategory name" value="<?php echo esc_attr($subcat['name']); ?>" />
-                                                <button class="select-documents button">Select Documents</button>
-                                                <button class="delete-subcategory button" style="margin-left:10px;">Delete Subcategory</button>
+                                                <input type="text" class="subcategory-name" placeholder="Nume subcategorie" value="<?php echo esc_attr($subcat['name']); ?>" />
+                                                <button class="select-documents button">Selectează Documente</button>
+                                                <button class="delete-subcategory button" style="margin-left:10px;">Șterge Subcategorie</button>
                                                 <input type="hidden" class="document-ids" value="<?php echo esc_attr(implode(',', $subcat['documents'])); ?>" />
                                                 <div class="document-preview">
                                                     <?php 
@@ -96,15 +96,15 @@ class Document_Tabs_Plugin {
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
-                                <button class="add-subcategory button" style="margin-left:10px;">Add Subcategory</button>
+                                <button class="add-subcategory button" style="margin-left:10px;">Adaugă Subcategorie</button>
                                 <hr>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-                <button id="add-category" class="button">Add Category</button>
+                <button id="add-category" class="button">Adaugă categorie</button>
                 <br><br>
-                <!-- Hidden field for the JSON data -->
+                <!-- Câmpul hidden pentru JSON-ul datelor -->
                 <input type="hidden" name="document_tabs_data" id="document_tabs_data" value="" />
                 <?php submit_button(); ?>
             </form>
@@ -132,16 +132,101 @@ class Document_Tabs_Plugin {
 public function document_tabs_shortcode() {
     $data = get_option($this->option_name, array());
     if(empty($data)) {
-        return '<p>No documents available.</p>';
+        return '<p>Nu sunt documente disponibile.</p>';
     }
     ob_start();
     ?>
      <style>
-    /* Styling omitted here for brevity — kept as-is from original */
+    body, .tabs-container, .tabs-container * {
+      font-family: 'Arimo', sans-serif;
+      color: black;
+    }
+    ul.tabs {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background-color: white;
+    }
+    ul.tabs li {
+      padding: 10px 20px;
+      cursor: pointer;
+      margin-right: 2px;
+      font-size: 18px;
+      font-weight: 600;
+      position: relative;
+      transition: color 0.3s ease;
+      border: none;
+      background-color: white;
+    }
+    ul.tabs li.active {
+      color: #0972ce;
+      background-color: white !important;
+    }
+    ul.tabs li::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: transparent;
+      transition: background-color 0.3s ease;
+    }
+    ul.tabs li.active::after {
+      background-color: #0972ce;
+    }
+    .tab-content {
+      display: none;
+      margin-top: 20px;
+      background-color: white;
+      padding: 20px;
+      margin-top: -10px !important;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    table, th, td {
+      border: none !important;
+      color: black;
+    }
+    table {
+      width: 100%;
+      background: white;
+      border-collapse: collapse;
+      margin-bottom: 30px; /* un mic spațiu între tabele, dacă sunt mai multe subcategorii */
+    }
+    a {
+      color: #003366;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    a:hover {
+      color: #003366;
+      text-decoration: underline;
+    }
+    thead {
+      border-bottom: 3px solid green;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    th, td {
+      padding: 20px !important;
+      border: none !important;
+      text-align: left !important;
+    }
+    tr + tr {
+      border-top: 1px solid #ccc;
+    }
+    tbody {
+      padding-bottom: 30px;
+    }
     </style>
 
     <div class="tabs-container">
-        <!-- Main tabs (years) -->
+        <!-- Tabs principale (ani) -->
         <ul class="tabs" id="main-tabs">
         <?php foreach($data as $index => $cat): ?>
             <li data-tab="tab-<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>">
@@ -153,7 +238,7 @@ public function document_tabs_shortcode() {
         <?php foreach($data as $index => $cat): ?>
         <div id="tab-<?php echo $index; ?>" class="tab-content <?php echo $index === 0 ? 'active' : ''; ?>">
 
-            <!-- Secondary tabs (subcategories) -->
+            <!-- Tabs secundare (subcategorii) -->
             <?php if (!empty($cat['subcategories'])): ?>
                 <ul class="tabs sub-tabs" id="sub-tabs-<?php echo $index; ?>">
                 <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
@@ -166,23 +251,25 @@ public function document_tabs_shortcode() {
                 <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
                 <div id="subtab-<?php echo $index.'-'.$subIndex; ?>" class="tab-content subtab-content <?php echo $subIndex === 0 ? 'active' : ''; ?>">
                     <table class="documentTable">
+                       
                         <tbody>
                         <?php if (!empty($subcat['documents'])): ?>
                             <?php foreach($subcat['documents'] as $doc_id): 
                                 $url = wp_get_attachment_url($doc_id);
                                 $title = get_the_title($doc_id);
                             ?>
-                                <tr><td><a href="<?php echo esc_url(add_query_arg('v', time(), $url)); ?>" target="_blank"><?php echo esc_html($title); ?></a></td></tr>
+                                <tr><td><a href="<?php echo esc_url(add_query_arg('v', time(), $url)); ?>" target="_blank"><?php echo esc_html($title); ?></a>
+</td></tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td><em>No entries in this subcategory.</em></td></tr>
+                            <tr><td><em>Nicio înregistrare în această subcategorie.</em></td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <p><em>There are no subcategories for this category.</em></p>
+                <p><em>Nu există subcategorii pentru această categorie.</em></p>
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
@@ -190,7 +277,7 @@ public function document_tabs_shortcode() {
 
     <script>
    document.addEventListener("DOMContentLoaded", function () {
-    // Main tabs (categories)
+    // Tabs principale (categoriile)
     const mainTabs = document.querySelectorAll('.tabs#main-tabs li');
     const mainTabContents = document.querySelectorAll('.tabs-container > .tab-content');
 
@@ -198,16 +285,16 @@ public function document_tabs_shortcode() {
         tab.addEventListener('click', function () {
             const target = this.getAttribute('data-tab');
 
-            // Deactivate all main tabs and their contents
+            // Dezactivează toate taburile principale și conținuturile lor
             mainTabs.forEach(t => t.classList.remove('active'));
             mainTabContents.forEach(c => c.classList.remove('active'));
 
-            // Activate the selected main tab and its content
+            // Activează tabul principal selectat și conținutul său
             this.classList.add('active');
             const activeContent = document.getElementById(target);
             activeContent.classList.add('active');
 
-            // Activate the first subtab and its content, if available
+            // Activează primul subtab și conținutul aferent, dacă există
             const subTabs = activeContent.querySelectorAll('.sub-tabs li');
             const subTabContents = activeContent.querySelectorAll('.subtab-content');
 
@@ -221,28 +308,30 @@ public function document_tabs_shortcode() {
         });
     });
 
-    // Subcategory tabs (sub-tabs)
+    // Tabs subcategorii (sub-tabs)
     document.querySelectorAll('.sub-tabs').forEach(subTabContainer => {
         const subtabs = subTabContainer.querySelectorAll('li');
         subtabs.forEach(tab => {
             tab.addEventListener('click', function (e) {
-                e.stopPropagation(); // Prevent click propagation to main tabs
+                e.stopPropagation(); // Previne propagarea clickului spre taburile principale
 
                 const target = this.getAttribute('data-subtab');
 
-                // Deactivate all subtabs in the current container and their contents
+                // Dezactivează toate subtabs din containerul curent și conținuturile lor
                 subtabs.forEach(t => t.classList.remove('active'));
 
                 const tabContentContainer = subTabContainer.closest('.tab-content');
                 tabContentContainer.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
 
-                // Activate the subtab and its corresponding content
+                // Activează subtabul și conținutul aferent
                 this.classList.add('active');
                 document.getElementById(target).classList.add('active');
             });
         });
     });
 });
+
+
     </script>
     <?php
     return ob_get_clean();
