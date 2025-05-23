@@ -38,14 +38,15 @@ class Document_Tabs_Plugin {
             return;
         }
         wp_enqueue_media();
-        wp_enqueue_script(
-            'document-tabs-admin',
-            plugin_dir_url(__FILE__) . 'document-tabs-admin.js',
-            array('jquery'),
-            '1.1',
-            true
-        );
-    }
+       wp_enqueue_script(
+    'document-tabs-admin',
+    plugin_dir_url(__FILE__) . 'document-tabs-admin.js',
+    array('jquery'),
+    '1.1',
+    true
+);
+}
+
 
     // Pagina de setări din admin
     public function admin_page() {
@@ -69,33 +70,63 @@ class Document_Tabs_Plugin {
                             <div class="category-item" data-index="<?php echo esc_attr($index); ?>">
                                 <input type="text" class="category-name" placeholder="Nume categorie (an)" value="<?php echo esc_attr($cat['name']); ?>" />
                                 <button class="delete-category button" style="margin-left:10px;">Șterge Categorie</button>
+<button class="move-cat-up button" style="margin-left:10px;">↑</button>
+<button class="move-cat-down button">↓</button>
+
                                 <div class="subcategories-container">
                                     <?php if(isset($cat['subcategories']) && is_array($cat['subcategories'])): ?>
                                         <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
-                                            <div class="subcategory-item" data-index="<?php echo esc_attr($subIndex); ?>" style="margin-left:20px; border:1px dashed #ddd; padding:10px; margin-top:10px;">
-                                                <input type="text" class="subcategory-name" placeholder="Nume subcategorie" value="<?php echo esc_attr($subcat['name']); ?>" />
-                                                <button class="select-documents button">Selectează Documente</button>
-                                                <button class="delete-subcategory button" style="margin-left:10px;">Șterge Subcategorie</button>
-                                                <input type="hidden" class="document-ids" value="<?php echo esc_attr(implode(',', $subcat['documents'])); ?>" />
-                                                <div class="document-preview">
-                                                    <?php 
-                                                    if(!empty($subcat['documents'])){
-                                                        $doc_ids = $subcat['documents'];
-                                                        $file_names = array();
-                                                        foreach($doc_ids as $doc_id) {
-                                                            $file = get_post($doc_id);
-                                                            if($file) {
-                                                                $file_names[] = $file->post_title;
-                                                            }
-                                                        }
-                                                        echo esc_html(implode(', ', $file_names));
-                                                    }
-                                                    ?>
-                                                </div>
-                                            </div>
+                          
+
+<div class="subcategory-item" data-index="<?php echo esc_attr($subIndex); ?>" style="margin-left:20px; border:1px dashed #ddd; padding:10px; margin-top:10px;">
+    <input type="text" class="subcategory-name" placeholder="Nume subcategorie" value="<?php echo esc_attr($subcat['name']); ?>" />
+    <button class="select-documents button">Selectează Documente</button>
+    <button class="delete-subcategory button" style="margin-left:10px;">Șterge Subcategorie</button>
+    <button class="move-sub-up button" style="margin-left:10px;">↑</button>
+    <button class="move-sub-down button">↓</button>
+
+    <input type="hidden" class="document-ids" value="<?php echo esc_attr(implode(',', $subcat['documents'])); ?>" />
+    <div class="document-preview">
+        <?php 
+        if(!empty($subcat['documents'])){
+            $doc_ids = $subcat['documents'];
+            $file_names = array();
+            foreach(array_reverse($doc_ids) as $doc_id) {
+                $file = get_post($doc_id);
+                if($file) {
+                    $file_names[] = $file->post_title;
+                }
+            }
+            echo esc_html(implode(', ', $file_names));
+        }
+        ?>
+    </div>
+
+    <div class="external-docs-container" style="margin-top:10px;">
+        <?php
+        if (!empty($subcat['externalDocuments'])) {
+            foreach ($subcat['externalDocuments'] as $extDoc) {
+                $title = esc_attr($extDoc['title']);
+                $url = esc_attr($extDoc['url']);
+                echo "<div class='external-doc' style='margin-bottom:10px;'>
+                    <input type='text' class='ext-doc-title' placeholder='Nume document' value='{$title}' />
+                    <input type='text' class='ext-doc-url' placeholder='Link document' value='{$url}' style='width:60%;' />
+                    <button class='delete-external-doc button' style='margin-left:10px;'>Șterge</button>
+                </div>";
+            }
+        }
+        ?>
+    </div>
+    <button type="button" class="add-external-doc button">Adaugă document extern</button>
+</div>
+
+
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
+                                
+                                <div class="external-docs-container" style="margin-top:10px;">
+
                                 <button class="add-subcategory button" style="margin-left:10px;">Adaugă Subcategorie</button>
                                 <hr>
                             </div>
@@ -131,149 +162,174 @@ class Document_Tabs_Plugin {
 
 public function document_tabs_shortcode() {
     $data = get_option($this->option_name, array());
-    if(empty($data)) {
+    if (empty($data)) {
         return '<p>Nu sunt documente disponibile.</p>';
     }
     ob_start();
     ?>
-     <style>
-    body, .tabs-container, .tabs-container * {
-      font-family: 'Arimo', sans-serif;
-      color: black;
-    }
-    ul.tabs {
-      display: flex;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      background-color: white;
-    }
-    ul.tabs li {
-      padding: 10px 20px;
-      cursor: pointer;
-      margin-right: 2px;
-      font-size: 18px;
-      font-weight: 600;
-      position: relative;
-      transition: color 0.3s ease;
-      border: none;
-      background-color: white;
-    }
-    ul.tabs li.active {
-      color: #0972ce;
-      background-color: white !important;
-    }
-    ul.tabs li::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background-color: transparent;
-      transition: background-color 0.3s ease;
-    }
-    ul.tabs li.active::after {
-      background-color: #0972ce;
-    }
-    .tab-content {
-      display: none;
-      margin-top: 20px;
-      background-color: white;
-      padding: 20px;
-      margin-top: -10px !important;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    table, th, td {
-      border: none !important;
-      color: black;
-    }
-    table {
-      width: 100%;
-      background: white;
-      border-collapse: collapse;
-      margin-bottom: 30px; /* un mic spațiu între tabele, dacă sunt mai multe subcategorii */
-    }
-    a {
-      color: #003366;
-      font-weight: bold;
-      text-decoration: underline;
-    }
-    a:hover {
-      color: #003366;
-      text-decoration: underline;
-    }
-    thead {
-      border-bottom: 3px solid green;
-      padding-top: 20px;
-      padding-bottom: 20px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-    th, td {
-      padding: 20px !important;
-      border: none !important;
-      text-align: left !important;
-    }
-    tr + tr {
-      border-top: 1px solid #ccc;
-    }
-    tbody {
-      padding-bottom: 30px;
-    }
+    <style>
+        body, .tabs-container, .tabs-container * {
+            font-family: 'Arimo', sans-serif;
+            color: black;
+        }
+        ul.tabs {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+        }
+        ul.tabs li {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 2px;
+            font-size: 18px;
+            font-weight: 600;
+            position: relative;
+            transition: color 0.3s ease;
+            border: none;
+            background-color: white;
+        }
+        ul.tabs li.active {
+            color: #0972ce;
+            background-color: white !important;
+        }
+        ul.tabs li::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+        ul.tabs li.active::after {
+            background-color: #0972ce;
+        }
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+            margin-top: -10px !important;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table, th, td {
+            border: none !important;
+            color: black;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        a {
+            color: #003366;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        a:hover {
+            color: #003366;
+            text-decoration: underline;
+        }
+        thead {
+            border-bottom: 3px solid green;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        th, td {
+            padding: 20px !important;
+            border: none !important;
+            text-align: left !important;
+        }
+        tr + tr {
+            border-top: 1px solid #ccc;
+        }
+        tbody {
+            padding-bottom: 30px;
+        }
     </style>
 
     <div class="tabs-container">
-        <!-- Tabs principale (ani) -->
         <ul class="tabs" id="main-tabs">
-        <?php foreach($data as $index => $cat): ?>
-            <li data-tab="tab-<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>">
-                <?php echo esc_html($cat['name']); ?>
-            </li>
-        <?php endforeach; ?>
+            <?php foreach ($data as $index => $cat): ?>
+                <li data-tab="tab-<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>">
+                    <?php echo esc_html($cat['name']); ?>
+                </li>
+            <?php endforeach; ?>
         </ul>
 
-        <?php foreach($data as $index => $cat): ?>
-        <div id="tab-<?php echo $index; ?>" class="tab-content <?php echo $index === 0 ? 'active' : ''; ?>">
+        <?php foreach ($data as $index => $cat): ?>
+            <div id="tab-<?php echo $index; ?>" class="tab-content <?php echo $index === 0 ? 'active' : ''; ?>">
+                <?php if (!empty($cat['subcategories'])): ?>
+                    <ul class="tabs sub-tabs" id="sub-tabs-<?php echo $index; ?>">
+                        <?php foreach ($cat['subcategories'] as $subIndex => $subcat): ?>
+                            <li data-subtab="subtab-<?php echo $index . '-' . $subIndex; ?>" class="<?php echo $subIndex === 0 ? 'active' : ''; ?>">
+                                <?php echo esc_html($subcat['name']); ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
 
-            <!-- Tabs secundare (subcategorii) -->
-            <?php if (!empty($cat['subcategories'])): ?>
-                <ul class="tabs sub-tabs" id="sub-tabs-<?php echo $index; ?>">
-                <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
-                    <li data-subtab="subtab-<?php echo $index.'-'.$subIndex; ?>" class="<?php echo $subIndex === 0 ? 'active' : ''; ?>">
-                        <?php echo esc_html($subcat['name']); ?>
-                    </li>
-                <?php endforeach; ?>
-                </ul>
+                    <?php foreach ($cat['subcategories'] as $subIndex => $subcat): ?>
+                        <div id="subtab-<?php echo $index . '-' . $subIndex; ?>" class="tab-content subtab-content <?php echo $subIndex === 0 ? 'active' : ''; ?>">
+                            <table class="documentTable">
+                                <tbody>
+                                    <?php
+                                    $hasMedia = !empty($subcat['documents']);
+                                    $hasExternal = !empty($subcat['externalDocuments']);
+                                    ?>
 
-                <?php foreach($cat['subcategories'] as $subIndex => $subcat): ?>
-                <div id="subtab-<?php echo $index.'-'.$subIndex; ?>" class="tab-content subtab-content <?php echo $subIndex === 0 ? 'active' : ''; ?>">
-                    <table class="documentTable">
-                       
-                        <tbody>
-                        <?php if (!empty($subcat['documents'])): ?>
-                            <?php foreach($subcat['documents'] as $doc_id): 
-                                $url = wp_get_attachment_url($doc_id);
-                                $title = get_the_title($doc_id);
-                            ?>
-                                <tr><td><a href="<?php echo esc_url(add_query_arg('v', time(), $url)); ?>" target="_blank"><?php echo esc_html($title); ?></a>
-</td></tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td><em>Nicio înregistrare în această subcategorie.</em></td></tr>
-                        <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p><em>Nu există subcategorii pentru această categorie.</em></p>
-            <?php endif; ?>
-        </div>
+                                    <?php if ($hasMedia): ?>
+                                        <?php foreach (array_reverse($subcat['documents']) as $doc_id): 
+$file = get_post($doc_id);
+    if (!$file) {
+        continue; // 📛 Sare peste documentul șters
+    }
+    $url = wp_get_attachment_url($doc_id);
+    $title = get_the_title($doc_id);
+                                        ?>
+                                            <tr>
+                                                <td>
+                                                    <a href="<?php echo esc_url(add_query_arg('v', time(), $url)); ?>" target="_blank">
+                                                        <?php echo esc_html($title); ?>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <?php if ($hasExternal): ?>
+                                        <?php foreach (array_reverse($subcat['externalDocuments']) as $extDoc): ?>
+                                            <tr>
+                                                <td>
+                                                    <a href="<?php echo esc_url($extDoc['url']); ?>" target="_blank">
+                                                        <?php echo esc_html($extDoc['title']); ?>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <?php if (!$hasMedia && !$hasExternal): ?>
+                                        <tr><td><em>Nicio înregistrare în această subcategorie.</em></td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p><em>Nu există subcategorii pentru această categorie.</em></p>
+                <?php endif; ?>
+            </div>
         <?php endforeach; ?>
     </div>
+
 
     <script>
    document.addEventListener("DOMContentLoaded", function () {
